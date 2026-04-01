@@ -123,3 +123,60 @@ fn test_centered_coeff() {
     assert_eq!(a.centered_coeff(9), -8);  // 9 - 17 = -8
     assert_eq!(a.centered_coeff(16), -1); // 16 - 17 = -1
 }
+
+#[test]
+fn test_schoolbook_mul_basic() {
+    let a = RingElement::from_coeffs(&[1, 1, 0, 0], 4, 17);
+    let b = a.mul_schoolbook(&a);
+    assert_eq!(b.coeffs(), &[1, 2, 1, 0]);
+}
+
+#[test]
+fn test_schoolbook_mul_negacyclic() {
+    let a = RingElement::from_coeffs(&[0, 0, 0, 1], 4, 17); // X^3
+    let b = RingElement::from_coeffs(&[0, 1, 0, 0], 4, 17); // X
+    let c = a.mul_schoolbook(&b);
+    assert_eq!(c.coeffs(), &[16, 0, 0, 0]); // X^4 = -1 mod 17 = 16
+}
+
+#[test]
+fn test_karatsuba_matches_schoolbook_n128() {
+    use rand::SeedableRng;
+    use rand_xoshiro::Xoshiro256PlusPlus;
+    let mut rng = Xoshiro256PlusPlus::seed_from_u64(42);
+    let n = 128;
+    let q = 65537u64;
+    let a = RingElement::random_short(n, q, q, &mut rng);
+    let b = RingElement::random_short(n, q, q, &mut rng);
+    let school = a.mul_schoolbook(&b);
+    let karat = a.mul_karatsuba(&b);
+    assert_eq!(school.coeffs(), karat.coeffs());
+}
+
+#[test]
+fn test_karatsuba_matches_schoolbook_n256() {
+    use rand::SeedableRng;
+    use rand_xoshiro::Xoshiro256PlusPlus;
+    let mut rng = Xoshiro256PlusPlus::seed_from_u64(99);
+    let n = 256;
+    let q: u64 = 4294967296;
+    let a = RingElement::random_short(n, q, 1000, &mut rng);
+    let b = RingElement::random_short(n, q, 1000, &mut rng);
+    let school = a.mul_schoolbook(&b);
+    let karat = a.mul_karatsuba(&b);
+    assert_eq!(school.coeffs(), karat.coeffs());
+}
+
+#[test]
+fn test_mul_dispatches_karatsuba_for_large_n() {
+    use rand::SeedableRng;
+    use rand_xoshiro::Xoshiro256PlusPlus;
+    let mut rng = Xoshiro256PlusPlus::seed_from_u64(77);
+    let n = 128;
+    let q = 65537u64;
+    let a = RingElement::random_short(n, q, q, &mut rng);
+    let b = RingElement::random_short(n, q, q, &mut rng);
+    let via_mul = a.mul(&b);
+    let via_school = a.mul_schoolbook(&b);
+    assert_eq!(via_mul.coeffs(), via_school.coeffs());
+}

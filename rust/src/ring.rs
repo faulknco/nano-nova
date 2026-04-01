@@ -200,14 +200,180 @@ impl RingElement {
         RingElement { coeffs_data: data, n, q: self.q }
     }
 
-    /// Karatsuba multiplication — delegates to schoolbook for now.
-    /// Full Karatsuba is implemented in Task 3.
+    /// Karatsuba negacyclic multiplication in Z_q[X]/(X^n + 1).
+    ///
+    /// Performs standard (non-negacyclic) Karatsuba to produce a 2n-1 length
+    /// intermediate, then applies the negacyclic reduction X^n = -1.
+    /// Falls back to schoolbook for n <= 64.
     pub fn mul_karatsuba(&self, other: &Self) -> Self {
-        self.mul_schoolbook(other)
+        debug_assert_eq!(self.n, other.n);
+        debug_assert_eq!(self.q, other.q);
+
+        let n = self.n;
+        let q = self.q;
+
+        // Produce the 2n-1 unreduced product via recursive Karatsuba.
+        let raw = karatsuba_raw(&self.coeffs_data, &other.coeffs_data);
+
+        // Apply negacyclic reduction: for each i in [n, 2n-2], subtract from i-n.
+        let mut result = vec![0i128; n];
+        for (i, &v) in raw.iter().enumerate() {
+            if i < n {
+                result[i] += v;
+            } else {
+                result[i - n] -= v;
+            }
+        }
+
+        let data = result
+            .into_iter()
+            .map(|v| v.rem_euclid(q as i128) as u64)
+            .collect();
+
+        RingElement { coeffs_data: data, n, q }
     }
 
-    /// Dispatching multiply: currently uses schoolbook.
+    /// Dispatching multiply: uses Karatsuba for n > 64, schoolbook otherwise.
     pub fn mul(&self, other: &Self) -> Self {
-        self.mul_schoolbook(other)
+        if self.n > 64 {
+            self.mul_karatsuba(other)
+        } else {
+            self.mul_schoolbook(other)
+        }
     }
+}
+
+// ── Karatsuba helper ──────────────────────────────────────────────────────────
+
+/// Standard (non-negacyclic) polynomial multiplication via Karatsuba.
+///
+/// Returns a vector of length `2*n - 1` holding the unreduced product
+/// coefficients as i128 values. The caller applies the negacyclic reduction.
+///
+/// Base case: n <= 64 uses schoolbook O(n^2).
+fn karatsuba_raw(a: &[u64], b: &[u64]) -> Vec<i128> {
+    let n = a.len();
+    debug_assert_eq!(n, b.len());
+
+    if n <= 64 {
+        // Schoolbook base case — no negacyclic wrapping here.
+        let out_len = if n == 0 { 0 } else { 2 * n - 1 };
+        let mut result = vec![0i128; out_len];
+        for i in 0..n {
+            for j in 0..n {
+                result[i + j] += a[i] as i128 * b[j] as i128;
+            }
+        }
+        return result;
+    }
+
+    let half = n / 2;
+    let (a_lo, a_hi) = a.split_at(half);
+    let (b_lo, b_hi) = b.split_at(half);
+
+    // z0 = a_lo * b_lo   (length 2*half - 1)
+    let z0 = karatsuba_raw(a_lo, b_lo);
+    // z2 = a_hi * b_hi   (length 2*(n-half) - 1)
+    let z2 = karatsuba_raw(a_hi, b_hi);
+
+    // mid_a = a_lo + a_hi,  mid_b = b_lo + b_hi  (may be length n-half)
+    let mid_len = half.max(n - half);
+    let mut mid_a = vec![0i128; mid_len];
+    let mut mid_b = vec![0i128; mid_len];
+    for i in 0..half {
+        mid_a[i] += a_lo[i] as i128;
+        mid_b[i] += b_lo[i] as i128;
+    }
+    for i in 0..(n - half) {
+        mid_a[i] += a_hi[i] as i128;
+        mid_b[i] += b_hi[i] as i128;
+    }
+
+    // z1_raw = mid_a * mid_b  (may have negative coefficients due to i128 sums)
+    let z1_raw = karatsuba_raw_i128(&mid_a, &mid_b);
+
+    // z1 = z1_raw - z0 - z2
+    // We need a working buffer of length 2*mid_len - 1
+    let z1_len = 2 * mid_len - 1;
+    let mut z1 = z1_raw;
+    z1.resize(z1_len, 0i128);
+    for (i, &v) in z0.iter().enumerate() {
+        z1[i] -= v;
+    }
+    for (i, &v) in z2.iter().enumerate() {
+        z1[i] -= v;
+    }
+
+    // Accumulate into result of length 2*n - 1
+    let out_len = 2 * n - 1;
+    let mut result = vec![0i128; out_len];
+    for (i, &v) in z0.iter().enumerate() {
+        result[i] += v;
+    }
+    for (i, &v) in z1.iter().enumerate() {
+        result[i + half] += v;
+    }
+    for (i, &v) in z2.iter().enumerate() {
+        result[i + n] += v;
+    }
+    result
+}
+
+/// Same as `karatsuba_raw` but accepts i128 inputs (used for the middle term).
+fn karatsuba_raw_i128(a: &[i128], b: &[i128]) -> Vec<i128> {
+    let n = a.len();
+    debug_assert_eq!(n, b.len());
+
+    if n <= 64 {
+        let out_len = if n == 0 { 0 } else { 2 * n - 1 };
+        let mut result = vec![0i128; out_len];
+        for i in 0..n {
+            for j in 0..n {
+                result[i + j] += a[i] * b[j];
+            }
+        }
+        return result;
+    }
+
+    let half = n / 2;
+    let (a_lo, a_hi) = a.split_at(half);
+    let (b_lo, b_hi) = b.split_at(half);
+
+    let z0 = karatsuba_raw_i128(a_lo, b_lo);
+    let z2 = karatsuba_raw_i128(a_hi, b_hi);
+
+    let mid_len = half.max(n - half);
+    let mut mid_a = vec![0i128; mid_len];
+    let mut mid_b = vec![0i128; mid_len];
+    for i in 0..half {
+        mid_a[i] += a_lo[i];
+        mid_b[i] += b_lo[i];
+    }
+    for i in 0..(n - half) {
+        mid_a[i] += a_hi[i];
+        mid_b[i] += b_hi[i];
+    }
+
+    let z1_len = 2 * mid_len - 1;
+    let mut z1 = karatsuba_raw_i128(&mid_a, &mid_b);
+    z1.resize(z1_len, 0i128);
+    for (i, &v) in z0.iter().enumerate() {
+        z1[i] -= v;
+    }
+    for (i, &v) in z2.iter().enumerate() {
+        z1[i] -= v;
+    }
+
+    let out_len = 2 * n - 1;
+    let mut result = vec![0i128; out_len];
+    for (i, &v) in z0.iter().enumerate() {
+        result[i] += v;
+    }
+    for (i, &v) in z1.iter().enumerate() {
+        result[i + half] += v;
+    }
+    for (i, &v) in z2.iter().enumerate() {
+        result[i + n] += v;
+    }
+    result
 }
