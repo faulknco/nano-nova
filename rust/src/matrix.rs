@@ -10,6 +10,7 @@ pub trait MatrixOps<F: Field> {
 }
 
 /// Row-major dense matrix over a field F.
+#[derive(Clone, Debug)]
 pub struct DenseMatrix<F: Field> {
     data: Vec<F>,
     nrows: usize,

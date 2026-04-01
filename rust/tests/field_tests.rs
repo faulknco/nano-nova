@@ -69,3 +69,9 @@ fn test_mul_large_values() {
     let b = Fp61::from_u64(p - 1); // -1 mod p
     assert_eq!(a.mul(b), Fp61::one()); // (-1)*(-1) = 1
 }
+
+#[test]
+#[should_panic(expected = "cannot invert zero")]
+fn test_inv_zero_panics() {
+    Fp61::zero().inv();
+}
