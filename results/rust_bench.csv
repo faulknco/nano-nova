@@ -1,0 +1,16 @@
+circuit,steps,trial,prove_time_us,verify_time_us
+fibonacci,10,1,88,0
+fibonacci,10,2,85,0
+fibonacci,10,3,84,0
+fibonacci,10,4,84,0
+fibonacci,10,5,84,0
+fibonacci,100,1,838,0
+fibonacci,100,2,829,0
+fibonacci,100,3,835,0
+fibonacci,100,4,827,0
+fibonacci,100,5,827,0
+fibonacci,1000,1,6311,0
+fibonacci,1000,2,4750,0
+fibonacci,1000,3,4175,0
+fibonacci,1000,4,3636,0
+fibonacci,1000,5,3309,0

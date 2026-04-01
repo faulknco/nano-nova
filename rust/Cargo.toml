@@ -1,0 +1,14 @@
+[package]
+name = "nano-nova"
+version = "0.1.0"
+edition = "2021"
+description = "Educational Nova folding scheme in Rust"
+
+[dependencies]
+sha2 = "0.10"
+rand = "0.8"
+clap = { version = "4", features = ["derive"] }
+
+[[bin]]
+name = "nano-nova"
+path = "src/bin/nano_nova.rs"
