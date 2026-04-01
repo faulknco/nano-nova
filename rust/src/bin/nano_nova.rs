@@ -1,1 +1,122 @@
-fn main() {}
+use std::time::Instant;
+
+use clap::{Parser, Subcommand};
+use nano_nova::commitment::ToyCommitment;
+use nano_nova::examples::{fibonacci_circuit, fibonacci_step, fibonacci_witness};
+use nano_nova::field::{Field, Fp61};
+use nano_nova::ivc::{ivc_prove, ivc_verify};
+use nano_nova::matrix::DenseMatrix;
+
+#[derive(Parser)]
+#[command(name = "nano-nova", about = "Educational Nova folding scheme")]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Prove IVC and print timing
+    Prove {
+        #[arg(long, default_value = "fibonacci")]
+        circuit: String,
+        #[arg(long, default_value_t = 100)]
+        steps: usize,
+    },
+    /// Run benchmark sweep and output CSV
+    Bench {
+        #[arg(long, default_value = "fibonacci")]
+        circuit: String,
+        /// Comma-separated step counts
+        #[arg(long, default_value = "10,100,1000")]
+        steps: String,
+        #[arg(long, default_value_t = 10)]
+        trials: usize,
+        #[arg(long, default_value = "results.csv")]
+        output: String,
+    },
+}
+
+fn main() {
+    let cli = Cli::parse();
+
+    match cli.command {
+        Commands::Prove { circuit, steps } => {
+            assert_eq!(circuit, "fibonacci", "only fibonacci circuit supported");
+
+            let shape = fibonacci_circuit::<Fp61>();
+            let z0 = vec![Fp61::from_u64(1), Fp61::from_u64(1)];
+
+            let prove_start = Instant::now();
+            let proof = ivc_prove::<Fp61, DenseMatrix<Fp61>, ToyCommitment>(
+                &shape,
+                fibonacci_step,
+                fibonacci_witness,
+                &z0,
+                steps,
+            );
+            let prove_us = prove_start.elapsed().as_micros();
+
+            let verify_start = Instant::now();
+            let valid = ivc_verify(&shape, &proof);
+            let verify_us = verify_start.elapsed().as_micros();
+
+            println!("Circuit:     {}", circuit);
+            println!("Steps:       {}", steps);
+            println!("Prove time:  {} us", prove_us);
+            println!("Verify time: {} us", verify_us);
+            println!("Valid:       {}", valid);
+        }
+        Commands::Bench {
+            circuit,
+            steps,
+            trials,
+            output,
+        } => {
+            assert_eq!(circuit, "fibonacci", "only fibonacci circuit supported");
+
+            let step_counts: Vec<usize> = steps
+                .split(',')
+                .map(|s| s.trim().parse().expect("invalid step count"))
+                .collect();
+
+            let shape = fibonacci_circuit::<Fp61>();
+            let z0 = vec![Fp61::from_u64(1), Fp61::from_u64(1)];
+
+            let mut csv = String::from("circuit,steps,trial,prove_time_us,verify_time_us\n");
+
+            for &step_count in &step_counts {
+                for trial in 1..=trials {
+                    let prove_start = Instant::now();
+                    let proof = ivc_prove::<Fp61, DenseMatrix<Fp61>, ToyCommitment>(
+                        &shape,
+                        fibonacci_step,
+                        fibonacci_witness,
+                        &z0,
+                        step_count,
+                    );
+                    let prove_us = prove_start.elapsed().as_micros();
+
+                    let verify_start = Instant::now();
+                    let _valid = ivc_verify(&shape, &proof);
+                    let verify_us = verify_start.elapsed().as_micros();
+
+                    csv.push_str(&format!(
+                        "{},{},{},{},{}\n",
+                        circuit, step_count, trial, prove_us, verify_us
+                    ));
+
+                    if trial == 1 {
+                        eprintln!(
+                            "{} steps, trial 1/{}: {} us prove",
+                            step_count, trials, prove_us
+                        );
+                    }
+                }
+            }
+
+            std::fs::write(&output, &csv).expect("failed to write CSV");
+            eprintln!("Results written to {}", output);
+        }
+    }
+}
