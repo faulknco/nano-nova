@@ -24,6 +24,23 @@ enum Commands {
         #[arg(long, default_value_t = 100)]
         steps: usize,
     },
+    /// Run LatticeFold norm growth parameter sweep
+    BenchNorm {
+        #[arg(long, default_value = "64,128,256,512")]
+        ring_dims: String,
+        #[arg(long, default_value = "65537,4294967296,18446744073709551616")]
+        moduli: String,
+        #[arg(long, default_value = "0,2,4,8,16")]
+        bases: String,
+        #[arg(long, default_value = "100,500,1000")]
+        folds: String,
+        #[arg(long, default_value_t = 1000)]
+        trials: usize,
+        #[arg(long, default_value_t = 42)]
+        seed: u64,
+        #[arg(long, default_value = "results/norm_growth")]
+        outdir: String,
+    },
     /// Run benchmark sweep and output CSV
     Bench {
         #[arg(long, default_value = "fibonacci")]
@@ -78,6 +95,44 @@ fn main() {
             println!("Prove time:  {} us", prove_us);
             println!("Verify time: {} us", verify_us);
             println!("Valid:       true");
+        }
+        Commands::BenchNorm {
+            ring_dims,
+            moduli,
+            bases,
+            folds,
+            trials,
+            seed,
+            outdir,
+        } => {
+            let ring_dims: Vec<usize> = ring_dims
+                .split(',')
+                .map(|s| s.trim().parse().expect("invalid ring dim"))
+                .collect();
+            let moduli: Vec<u64> = moduli
+                .split(',')
+                .map(|s| s.trim().parse().expect("invalid modulus"))
+                .collect();
+            let bases: Vec<u64> = bases
+                .split(',')
+                .map(|s| s.trim().parse().expect("invalid base"))
+                .collect();
+            let fold_counts: Vec<usize> = folds
+                .split(',')
+                .map(|s| s.trim().parse().expect("invalid fold count"))
+                .collect();
+
+            let config = nano_nova::norm_sweep::SweepConfig {
+                ring_dims,
+                moduli,
+                bases,
+                fold_counts,
+                num_trials: trials,
+                seed,
+                outdir: std::path::PathBuf::from(outdir),
+            };
+
+            nano_nova::norm_sweep::run_sweep(&config);
         }
         Commands::Bench {
             circuit,
