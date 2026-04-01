@@ -5,3 +5,7 @@ pub mod r1cs;
 pub mod folding;
 pub mod ivc;
 pub mod examples;
+pub mod ring;
+pub mod decompose;
+pub mod norm_sim;
+pub mod norm_sweep;

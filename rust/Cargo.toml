@@ -7,8 +7,14 @@ description = "Educational Nova folding scheme in Rust"
 [dependencies]
 sha2 = "0.10"
 rand = "0.8"
+rand_xoshiro = "0.6"
 clap = { version = "4", features = ["derive"] }
 
 [[bin]]
 name = "nano-nova"
 path = "src/bin/nano_nova.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
