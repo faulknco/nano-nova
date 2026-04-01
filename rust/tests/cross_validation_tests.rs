@@ -1,16 +1,9 @@
 use nano_nova::commitment::ToyCommitment;
-use nano_nova::examples::fibonacci_circuit;
+use nano_nova::examples::{fibonacci_circuit, fibonacci_step, fibonacci_witness};
 use nano_nova::field::{Field, Fp61};
 use nano_nova::folding::{compute_cross_term, fold};
 use nano_nova::matrix::DenseMatrix;
 use nano_nova::r1cs::{r1cs_to_relaxed, trivial_relaxed};
-
-fn fib_step(z: &[Fp61]) -> Vec<Fp61> {
-    vec![z[1], z[0].add(z[1])]
-}
-fn fib_witness(z: &[Fp61]) -> Vec<Fp61> {
-    vec![z[0].add(z[1])]
-}
 
 #[test]
 fn test_cross_term_is_zero_for_trivial_fold() {
@@ -20,9 +13,9 @@ fn test_cross_term_is_zero_for_trivial_fold() {
     let shape = fibonacci_circuit::<Fp61>();
 
     let z_in = vec![Fp61::from_u64(1), Fp61::from_u64(1)];
-    let z_out = fib_step(&z_in);
+    let z_out = fibonacci_step(&z_in);
     let x: Vec<Fp61> = z_in.iter().chain(z_out.iter()).copied().collect();
-    let w = fib_witness(&z_in);
+    let w = fibonacci_witness(&z_in);
 
     let (triv_inst, triv_wit) = trivial_relaxed::<Fp61, _, ToyCommitment>(&shape);
     let (fresh_inst, fresh_wit) = r1cs_to_relaxed::<Fp61, _, ToyCommitment>(&shape, &x, &w);
@@ -49,9 +42,9 @@ fn test_first_fold_produces_valid_instance() {
     let shape = fibonacci_circuit::<Fp61>();
 
     let z_in = vec![Fp61::from_u64(1), Fp61::from_u64(1)];
-    let z_out = fib_step(&z_in);
+    let z_out = fibonacci_step(&z_in);
     let x: Vec<Fp61> = z_in.iter().chain(z_out.iter()).copied().collect();
-    let w = fib_witness(&z_in);
+    let w = fibonacci_witness(&z_in);
 
     let (triv_inst, triv_wit) = trivial_relaxed::<Fp61, _, ToyCommitment>(&shape);
     let (fresh_inst, fresh_wit) = r1cs_to_relaxed::<Fp61, _, ToyCommitment>(&shape, &x, &w);
@@ -84,8 +77,8 @@ fn test_10_step_ivc_final_state_matches_python() {
 
     let proof = ivc_prove::<Fp61, DenseMatrix<Fp61>, ToyCommitment>(
         &shape,
-        fib_step,
-        fib_witness,
+        fibonacci_step,
+        fibonacci_witness,
         &z0,
         10,
     );

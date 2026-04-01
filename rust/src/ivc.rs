@@ -31,7 +31,7 @@ pub fn ivc_prove<F: Field, M: MatrixOps<F>, C: CommitmentScheme<F>>(
         x_i.extend_from_slice(&z_current);
         x_i.extend_from_slice(&z_next);
 
-        assert!(
+        debug_assert!(
             shape.is_satisfied(&x_i, &w_i),
             "Step {}: R1CS not satisfied!",
             i

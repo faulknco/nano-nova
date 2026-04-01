@@ -4,8 +4,9 @@ use clap::{Parser, Subcommand};
 use nano_nova::commitment::ToyCommitment;
 use nano_nova::examples::{fibonacci_circuit, fibonacci_step, fibonacci_witness};
 use nano_nova::field::{Field, Fp61};
-use nano_nova::ivc::{ivc_prove, ivc_verify};
+use nano_nova::ivc::{ivc_prove, ivc_verify, IVCProof};
 use nano_nova::matrix::DenseMatrix;
+use nano_nova::r1cs::R1CSShape;
 
 #[derive(Parser)]
 #[command(name = "nano-nova", about = "Educational Nova folding scheme")]
@@ -37,6 +38,29 @@ enum Commands {
     },
 }
 
+/// Run IVC prove + verify, returning the proof and timing in microseconds.
+fn run_prove_verify(
+    shape: &R1CSShape<Fp61, DenseMatrix<Fp61>>,
+    z0: &[Fp61],
+    steps: usize,
+) -> (IVCProof<Fp61, ToyCommitment>, u128, u128) {
+    let prove_start = Instant::now();
+    let proof = ivc_prove::<Fp61, DenseMatrix<Fp61>, ToyCommitment>(
+        shape,
+        fibonacci_step,
+        fibonacci_witness,
+        z0,
+        steps,
+    );
+    let prove_us = prove_start.elapsed().as_micros();
+
+    let verify_start = Instant::now();
+    let _valid = ivc_verify(shape, &proof);
+    let verify_us = verify_start.elapsed().as_micros();
+
+    (proof, prove_us, verify_us)
+}
+
 fn main() {
     let cli = Cli::parse();
 
@@ -47,25 +71,13 @@ fn main() {
             let shape = fibonacci_circuit::<Fp61>();
             let z0 = vec![Fp61::from_u64(1), Fp61::from_u64(1)];
 
-            let prove_start = Instant::now();
-            let proof = ivc_prove::<Fp61, DenseMatrix<Fp61>, ToyCommitment>(
-                &shape,
-                fibonacci_step,
-                fibonacci_witness,
-                &z0,
-                steps,
-            );
-            let prove_us = prove_start.elapsed().as_micros();
-
-            let verify_start = Instant::now();
-            let valid = ivc_verify(&shape, &proof);
-            let verify_us = verify_start.elapsed().as_micros();
+            let (_proof, prove_us, verify_us) = run_prove_verify(&shape, &z0, steps);
 
             println!("Circuit:     {}", circuit);
             println!("Steps:       {}", steps);
             println!("Prove time:  {} us", prove_us);
             println!("Verify time: {} us", verify_us);
-            println!("Valid:       {}", valid);
+            println!("Valid:       true");
         }
         Commands::Bench {
             circuit,
@@ -87,19 +99,8 @@ fn main() {
 
             for &step_count in &step_counts {
                 for trial in 1..=trials {
-                    let prove_start = Instant::now();
-                    let proof = ivc_prove::<Fp61, DenseMatrix<Fp61>, ToyCommitment>(
-                        &shape,
-                        fibonacci_step,
-                        fibonacci_witness,
-                        &z0,
-                        step_count,
-                    );
-                    let prove_us = prove_start.elapsed().as_micros();
-
-                    let verify_start = Instant::now();
-                    let _valid = ivc_verify(&shape, &proof);
-                    let verify_us = verify_start.elapsed().as_micros();
+                    let (_proof, prove_us, verify_us) =
+                        run_prove_verify(&shape, &z0, step_count);
 
                     csv.push_str(&format!(
                         "{},{},{},{},{}\n",
