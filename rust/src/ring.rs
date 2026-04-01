@@ -17,6 +17,9 @@ impl RingElement {
     /// Pads with zeros up to length n if the slice is shorter.
     /// Panics if the slice is longer than n.
     pub fn from_coeffs(coeffs: &[u64], n: usize, q: u64) -> Self {
+        assert!(n > 0 && (n & (n - 1)) == 0, "n must be a power of 2");
+        assert!(q > 1, "q must be > 1");
+        assert!(q <= (1u64 << 63), "q must be <= 2^63 for safe i64 centering arithmetic");
         assert!(
             coeffs.len() <= n,
             "from_coeffs: coeffs.len() ({}) > n ({})",
@@ -35,6 +38,7 @@ impl RingElement {
 
     /// Zero polynomial in R_q with dimension n.
     pub fn zero(n: usize, q: u64) -> Self {
+        assert!(q <= (1u64 << 63), "q must be <= 2^63 for safe arithmetic");
         RingElement {
             coeffs_data: vec![0u64; n],
             n,

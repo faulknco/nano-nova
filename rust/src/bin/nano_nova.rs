@@ -28,7 +28,7 @@ enum Commands {
     BenchNorm {
         #[arg(long, default_value = "64,128,256,512")]
         ring_dims: String,
-        #[arg(long, default_value = "65537,4294967296,18446744073709551616")]
+        #[arg(long, default_value = "65537,4294967296")]
         moduli: String,
         #[arg(long, default_value = "0,2,4,8,16")]
         bases: String,
