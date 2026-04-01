@@ -56,8 +56,8 @@ impl<F: Field> MatrixOps<F> for DenseMatrix<F> {
             .map(|i| {
                 let row_start = i * self.ncols;
                 let mut sum = F::zero();
-                for j in 0..self.ncols {
-                    sum = sum.add(self.data[row_start + j].mul(v[j]));
+                for (j, &vj) in v.iter().enumerate() {
+                    sum = sum.add(self.data[row_start + j].mul(vj));
                 }
                 sum
             })
