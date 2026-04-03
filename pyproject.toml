@@ -33,6 +33,10 @@ build-backend = "hatchling.build"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+exclude = ["notebooks/", "experiments/"]
+
+[tool.ruff.lint]
+ignore = ["E741"]  # 'l' is standard Nova paper notation for public input count
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
