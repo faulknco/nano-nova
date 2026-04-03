@@ -5,7 +5,17 @@ __pycache__/
 .pytest_cache/
 *.png
 .ipynb_checkpoints/
-uv.lock
 
 animations/media/
 media/
+
+# Session artifacts
+HANDOFF.md
+.DS_Store
+.superpowers/
+
+# Large rendered video files
+renders/
+
+# Raw trajectory CSVs (too many, keep summary + figures)
+results/norm_growth_v2/trajectories/
