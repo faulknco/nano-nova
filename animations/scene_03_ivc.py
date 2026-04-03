@@ -90,21 +90,21 @@ class IVCAccumulation(Scene):
         step_times = [SLOW, SLOW, NORMAL, NORMAL, FAST, FAST]
         opacity_steps = [0.15, 0.25, 0.35, 0.45, 0.55, 0.65]
 
-        for i, (time, opacity) in enumerate(zip(step_times, opacity_steps)):
+        for i, (speed, opacity) in enumerate(zip(step_times, opacity_steps)):
             step_num = i + 1
 
             fresh = InstanceBox(
                 f"Step {step_num}", color=FRESH_INSTANCE_COLOR, width=1.8, height=1.0
             )
             fresh.move_to(RIGHT * 3)
-            self.play(FadeIn(fresh), run_time=time)
+            self.play(FadeIn(fresh), run_time=speed)
 
-            self.play(fresh.animate.move_to(acc.get_center()), run_time=time)
+            self.play(fresh.animate.move_to(acc.get_center()), run_time=speed)
             self.play(
                 FadeOut(fresh),
                 acc.animate.set_fill(ACCUMULATOR_COLOR, opacity=opacity),
                 Flash(acc, color=ACCUMULATOR_COLOR, flash_radius=0.8),
-                run_time=time * 0.5,
+                run_time=speed * 0.5,
             )
 
             new_counter = Text(f"Steps: {step_num}", font_size=BODY_SIZE, color=WHITE)

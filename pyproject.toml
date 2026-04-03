@@ -8,13 +8,16 @@ license = "MIT"
 dependencies = [
     "galois>=0.4.1",
     "numpy>=1.26",
-    "scipy>=1.12",
     "matplotlib>=3.8",
-    "jupyter>=1.0",
-    "pandas>=3.0.2",
 ]
 
 [project.optional-dependencies]
+notebooks = [
+    "jupyter>=1.0",
+    "pandas>=2.0",
+    "scipy>=1.12",
+    "ipykernel>=6.0",
+]
 dev = [
     "pytest>=8.0",
     "ruff>=0.3",

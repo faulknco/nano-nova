@@ -1686,11 +1686,8 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "galois" },
-    { name = "jupyter" },
     { name = "matplotlib" },
     { name = "numpy" },
-    { name = "pandas" },
-    { name = "scipy" },
 ]
 
 [package.optional-dependencies]
@@ -1701,20 +1698,27 @@ dev = [
     { name = "pytest" },
     { name = "ruff" },
 ]
+notebooks = [
+    { name = "ipykernel" },
+    { name = "jupyter" },
+    { name = "pandas" },
+    { name = "scipy" },
+]
 
 [package.metadata]
 requires-dist = [
     { name = "galois", specifier = ">=0.4.1" },
-    { name = "jupyter", specifier = ">=1.0" },
+    { name = "ipykernel", marker = "extra == 'notebooks'", specifier = ">=6.0" },
+    { name = "jupyter", marker = "extra == 'notebooks'", specifier = ">=1.0" },
     { name = "manim", marker = "extra == 'animations'", specifier = ">=0.18" },
     { name = "matplotlib", specifier = ">=3.8" },
     { name = "numpy", specifier = ">=1.26" },
-    { name = "pandas", specifier = ">=3.0.2" },
+    { name = "pandas", marker = "extra == 'notebooks'", specifier = ">=2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.3" },
-    { name = "scipy", specifier = ">=1.12" },
+    { name = "scipy", marker = "extra == 'notebooks'", specifier = ">=1.12" },
 ]
-provides-extras = ["dev", "animations"]
+provides-extras = ["notebooks", "dev", "animations"]
 
 [[package]]
 name = "nbclient"

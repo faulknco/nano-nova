@@ -86,7 +86,8 @@ def ivc_prove(
         x_i = GF(np.concatenate([z_current, z_next]))
 
         # Verify the fresh instance satisfies standard R1CS
-        assert shape.is_satisfied(x_i, w_i), f"Step {i}: R1CS not satisfied!"
+        if not shape.is_satisfied(x_i, w_i):
+            raise ValueError(f"Step {i}: R1CS not satisfied — check step_fn and witness_fn")
 
         # Lift to relaxed R1CS
         fresh_instance, fresh_witness = r1cs_to_relaxed(shape, x_i, w_i, commit)
@@ -112,8 +113,10 @@ def ivc_prove(
 def ivc_verify(shape: R1CSShape, proof: IVCProof) -> bool:
     """Verify an IVC proof by checking the accumulated Relaxed R1CS.
 
-    In real Nova, this would involve checking a SNARK proof of the
-    accumulated instance. Here we directly check the relaxed relation.
+    In real Nova, this involves two checks: (1) a SNARK proof over the
+    accumulated Relaxed R1CS instance, and (2) verifying that z_current
+    matches the public input of the accumulator. Here we only do check (1)
+    directly — sufficient for the educational demo but not production-complete.
 
     Args:
         shape: The R1CS structure.

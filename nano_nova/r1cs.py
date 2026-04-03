@@ -135,9 +135,9 @@ def r1cs_to_relaxed(
 def trivial_relaxed(shape: R1CSShape, commit_fn) -> tuple[RelaxedR1CSInstance, RelaxedR1CSWitness]:
     """Create a trivial relaxed instance (u=0, E=0, W=0, x=0).
 
-    This is the starting accumulator for IVC — it satisfies the relaxed relation
-    trivially because u=0 makes the RHS zero and E=0 makes the LHS = Az∘Bz which
-    equals 0 when W=0.
+    This is the starting accumulator for IVC. With u=0, W=0, x=0, E=0, the
+    relaxed relation becomes Az∘Bz = 0·Cz + 0. Since z = (u, x, W) = (0, 0, 0),
+    every matrix product Az, Bz, Cz is zero, so 0 = 0 holds trivially.
 
     Args:
         shape: The R1CS structure.

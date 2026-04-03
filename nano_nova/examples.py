@@ -21,10 +21,7 @@ def fibonacci_step_circuit() -> R1CSShape:
 
     Constraints (m=3):
     1. z_i[0] + z_i[1] = w[0]          (compute sum)
-       Encoded as: (1) * (z_i[0] + z_i[1]) = w[0]
-       A[0] = [0, 0, 0, 0, 0, 0], B[0] = [1, 0, 0, 0, 0, 0] — wait, R1CS is multiplicative.
-
-    Actually, for R1CS we need (a·z)(b·z) = c·z. To encode addition:
+       R1CS encodes linear combinations via the B row — multiply by 1 to "pass through":
        (1) * (z_i[0] + z_i[1]) = w[0]
        A = [1, 0, 0, 0, 0, 0]  (selects constant 1)
        B = [0, 1, 1, 0, 0, 0]  (selects z_i[0] + z_i[1])

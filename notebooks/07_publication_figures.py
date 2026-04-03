@@ -304,8 +304,8 @@ def plot_tightness(q, num_folds):
             row = subset[(subset["base"] == base) & (subset["n"] == n)]
             if not row.empty:
                 empirical.append(row["digit_linf_p99"].values[0])
-                # Theoretical worst case for digit linf: base/2 (centered digits in [-B/2, B/2])
-                theoretical.append(base / 2)
+                # Theoretical worst case: floor(B/2) for centered digits in {-floor(B/2),...,floor(B/2)}
+                theoretical.append(base // 2)
             else:
                 empirical.append(0)
                 theoretical.append(0)
@@ -373,7 +373,7 @@ def plot_scaling():
             ax.loglog(dims, vals, "o-", label=f"B={base}")
 
         # sqrt(n) reference line from naive
-        if len(dims) >= 2 and naive_vals[0] is not None:
+        if len(dims) >= 2 and not np.isnan(naive_vals[0]):
             ref = [naive_vals[0] * (n / dims[0]) ** 0.5 for n in dims]
             ax.loglog(dims, ref, ":", alpha=0.4, color="gray", label="~sqrt(n) ref")
 

@@ -50,7 +50,8 @@ nano_nova/            # Core Python library
 ├── r1cs.py           # R1CS and Relaxed R1CS data structures
 ├── commitment.py     # Toy commitment scheme
 ├── folding.py        # Core Nova fold step
-└── ivc.py            # IVC prover and verifier
+├── ivc.py            # IVC prover and verifier
+└── examples.py       # Example circuits (Fibonacci step)
 
 notebooks/
 ├── 01–05_*.ipynb     # Step-by-step Nova walkthrough

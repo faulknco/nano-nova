@@ -63,11 +63,15 @@ def fiat_shamir_challenge(
     com_T: ToyCommitment,
     instance1: RelaxedR1CSInstance,
     instance2: RelaxedR1CSInstance,
-) -> object:
+) -> np.ndarray:
     """Derive a challenge r via Fiat-Shamir (hash of transcript).
 
     In the interactive protocol, the verifier sends random r after seeing com_T.
     Fiat-Shamir makes this non-interactive by hashing the transcript.
+
+    Note: the full Nova transcript (Construction 4) also includes com_E1 and
+    com_E2. We omit them here for simplicity — this is sufficient for the
+    educational IVC demo but not for production security.
 
     Nova paper: Section 4, making NIFS non-interactive.
 
@@ -77,14 +81,15 @@ def fiat_shamir_challenge(
         instance2: Second public instance.
 
     Returns:
-        Challenge r as a field element.
+        Challenge r as a GF(p) field element.
     """
+    # 9 bytes covers the full 61-bit field prime (2^61 - 1 < 2^72 = 9 bytes)
     transcript = b""
     transcript += com_T.value
     transcript += instance1.x.tobytes()
     transcript += instance2.x.tobytes()
-    transcript += int(instance1.u).to_bytes(8, "big")
-    transcript += int(instance2.u).to_bytes(8, "big")
+    transcript += int(instance1.u).to_bytes(9, "big")
+    transcript += int(instance2.u).to_bytes(9, "big")
     transcript += instance1.com_W.value
     transcript += instance2.com_W.value
 

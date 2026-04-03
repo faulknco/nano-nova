@@ -21,7 +21,8 @@
 # | Partition function | Accumulated R1CS instance |
 # | RG coarse-graining | Recursive proof compression |
 #
-# No prior art exists for this connection. This is novel.
+# We are not aware of prior literature making this specific connection between
+# Nova IVC and the statistical mechanical transfer matrix method.
 
 # %% [markdown]
 # ## 1. The Physics
@@ -58,10 +59,15 @@ def transfer_matrix(J: float) -> np.ndarray:
 
 
 def ising_partition_exact(J: float, N: int) -> float:
-    """Exact result for sum(T^N @ [1,1]).
+    """Compute sum(T^N @ [1,1]) — the quantity tracked by the transfer iteration.
 
-    [1,1] is an eigenvector of T with eigenvalue 2cosh(J), so:
-    T^N @ [1,1] = (2cosh J)^N * [1,1], and sum = 2*(2cosh J)^N.
+    [1,1] is an eigenvector of T with eigenvalue λ+ = 2cosh(J), so:
+        T^N @ [1,1] = λ+^N * [1,1],  sum = 2 * λ+^N = 2 * (2cosh J)^N.
+
+    Note: the full partition function Tr(T^N) = λ+^N + λ-^N includes the
+    subleading eigenvalue λ- = 2sinh(J). For large N, λ-^N is negligible
+    but non-zero. This function returns the dominant-eigenvalue approximation,
+    which matches `ising_partition_transfer` exactly (both start from [1,1]).
     """
     return 2.0 * (2.0 * np.cosh(J)) ** N
 
@@ -384,10 +390,12 @@ plt.show()
 # - Connect LatticeFold norm growth bounds to correlation length divergence at Tc
 #   (both are controlled by the largest eigenvalue of the transfer matrix — λ+ = 2cosh(J))
 #
-# The eigenvalue connection is particularly striking:
-# - Ising correlation length: ξ ~ 1/ln(λ+/λ-)
+# The eigenvalue connection is particularly striking for the real Ising model:
+# - Ising correlation length (real coupling J): ξ ~ 1/ln(λ+/λ-) = 1/ln(cosh J/sinh J)
 # - LatticeFold norm growth: ‖digit‖ ~ O(B) per fold step
 # - Both measure how "hard" successive compositions are to control.
+# (The integer toy model used above, a=3 b=1, has ξ ~ 1/ln(2) ≈ 1.44 — a fixed
+#  value with no physical tuning parameter, unlike the real J-dependent model.)
 
 print("Notebook complete. Key files generated:")
 print("  results/ising_thermodynamics.png  — physics sanity check")

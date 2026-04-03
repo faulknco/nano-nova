@@ -96,3 +96,4 @@
 [94/120] n=512 q=65537 B=2 folds=100: 593.5s (est 2.2h remaining)
 [95/120] n=512 q=65537 B=2 folds=500: 2915.3s (est 2.3h remaining)
 [96/120] n=512 q=65537 B=2 folds=1000: 5790.9s (est 2.6h remaining)
+[97/120] n=512 q=65537 B=4 folds=100: 351.2s (est 2.5h remaining)
