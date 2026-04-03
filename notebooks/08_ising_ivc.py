@@ -313,19 +313,19 @@ import time
 chain_lengths = [5, 10, 20, 50, 100]
 prove_times = []
 verify_times = []
+shape_bench = build_ising_r1cs()  # shape is independent of N — build once
 
 for N_test in chain_lengths:
-    shape_test = build_ising_r1cs()
     z0_test = GF(np.array([1, 1]))
 
     # Time proving
     t0 = time.time()
-    proof_test = ivc_prove(shape_test, step_fn, witness_fn, z0_test, N_test)
+    proof_test = ivc_prove(shape_bench, step_fn, witness_fn, z0_test, N_test)
     prove_times.append(time.time() - t0)
 
     # Time verifying
     t0 = time.time()
-    ivc_verify(shape_test, proof_test)
+    ivc_verify(shape_bench, proof_test)
     verify_times.append(time.time() - t0)
 
 fig, ax = plt.subplots(figsize=(9, 5))

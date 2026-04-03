@@ -128,30 +128,17 @@ def fold(
     Returns:
         (folded_instance, folded_witness) — a new valid Relaxed R1CS pair.
     """
-    # Step 1: Compute cross-term
     T = compute_cross_term(shape, instance1, witness1, instance2, witness2)
-
-    # Step 2: Commit to T
     com_T = commit(T)
-
-    # Step 3: Fiat-Shamir challenge
     r = fiat_shamir_challenge(com_T, instance1, instance2)
 
-    # Step 4: Fold everything
     # E' = E₁ + r·T + r²·E₂
     r_sq = r * r
     E_folded = witness1.E + r * T + r_sq * witness2.E
-
-    # u' = u₁ + r·u₂
     u_folded = instance1.u + r * instance2.u
-
-    # x' = x₁ + r·x₂
     x_folded = instance1.x + r * instance2.x
-
-    # W' = W₁ + r·W₂
     W_folded = witness1.W + r * witness2.W
 
-    # Commitments fold homomorphically (simulated here)
     com_E_folded = commit(E_folded)
     com_W_folded = commit(W_folded)
 
