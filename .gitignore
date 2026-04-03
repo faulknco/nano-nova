@@ -19,3 +19,4 @@ renders/
 
 # Raw trajectory CSVs (too many, keep summary + figures)
 results/norm_growth_v2/trajectories/
+experiments/__pycache__/
