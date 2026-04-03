@@ -39,11 +39,18 @@ struct ComboStats {
     linf_p95: f64,
     linf_p99: f64,
     linf_max: f64,
+    // Digit-level norms: equal to l2/linf for naive, much smaller for decomposed.
+    digit_l2_mean: f64,
+    digit_l2_p99: f64,
+    digit_linf_mean: f64,
+    digit_linf_p99: f64,
     log_growth_rate: f64,
     mean_l2_trajectory: Vec<f64>,
     mean_linf_trajectory: Vec<f64>,
     p99_l2_trajectory: Vec<f64>,
     p99_linf_trajectory: Vec<f64>,
+    mean_digit_l2_trajectory: Vec<f64>,
+    p99_digit_l2_trajectory: Vec<f64>,
 }
 
 fn aggregate_trials(all_results: &[Vec<FoldStep>], num_folds: usize) -> ComboStats {
@@ -73,18 +80,39 @@ fn aggregate_trials(all_results: &[Vec<FoldStep>], num_folds: usize) -> ComboSta
     let mut mean_linf_traj = vec![0.0f64; num_folds];
     let mut p99_l2_traj = vec![0.0f64; num_folds];
     let mut p99_linf_traj = vec![0.0f64; num_folds];
+    let mut mean_digit_l2_traj = vec![0.0f64; num_folds];
+    let mut p99_digit_l2_traj = vec![0.0f64; num_folds];
 
     for step in 0..num_folds {
         let mut step_l2s: Vec<f64> = all_results.iter().map(|r| r[step].l2).collect();
         let mut step_linfs: Vec<f64> = all_results.iter().map(|r| r[step].linf as f64).collect();
+        let mut step_digit_l2s: Vec<f64> = all_results.iter().map(|r| r[step].digit_l2).collect();
         step_l2s.sort_by(|a, b| a.partial_cmp(b).unwrap());
         step_linfs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        step_digit_l2s.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
         mean_l2_traj[step] = step_l2s.iter().sum::<f64>() / num_trials as f64;
         mean_linf_traj[step] = step_linfs.iter().sum::<f64>() / num_trials as f64;
         p99_l2_traj[step] = percentile(&step_l2s, 99.0);
         p99_linf_traj[step] = percentile(&step_linfs, 99.0);
+        mean_digit_l2_traj[step] = step_digit_l2s.iter().sum::<f64>() / num_trials as f64;
+        p99_digit_l2_traj[step] = percentile(&step_digit_l2s, 99.0);
     }
+
+    // Digit-level final stats
+    let mut final_digit_l2s: Vec<f64> = all_results
+        .iter()
+        .map(|r| r.last().unwrap().digit_l2)
+        .collect();
+    final_digit_l2s.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let digit_l2_mean = final_digit_l2s.iter().sum::<f64>() / num_trials as f64;
+
+    let mut final_digit_linfs: Vec<f64> = all_results
+        .iter()
+        .map(|r| r.last().unwrap().digit_linf as f64)
+        .collect();
+    final_digit_linfs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let digit_linf_mean = final_digit_linfs.iter().sum::<f64>() / num_trials as f64;
 
     // Log growth rate: fit log(l2[step]) = a*step + b via least squares
     let log_growth_rate = if num_folds > 1 {
@@ -119,11 +147,17 @@ fn aggregate_trials(all_results: &[Vec<FoldStep>], num_folds: usize) -> ComboSta
         linf_p95: percentile(&final_linfs, 95.0),
         linf_p99: percentile(&final_linfs, 99.0),
         linf_max: *final_linfs.last().unwrap_or(&0.0),
+        digit_l2_mean,
+        digit_l2_p99: percentile(&final_digit_l2s, 99.0),
+        digit_linf_mean,
+        digit_linf_p99: percentile(&final_digit_linfs, 99.0),
         log_growth_rate,
         mean_l2_trajectory: mean_l2_traj,
         mean_linf_trajectory: mean_linf_traj,
         p99_l2_trajectory: p99_l2_traj,
         p99_linf_trajectory: p99_linf_traj,
+        mean_digit_l2_trajectory: mean_digit_l2_traj,
+        p99_digit_l2_trajectory: p99_digit_l2_traj,
     }
 }
 
@@ -137,7 +171,9 @@ pub fn run_sweep(config: &SweepConfig) {
     writeln!(
         summary,
         "n,q,base,num_folds,trials,l2_mean,l2_std,l2_median,l2_p95,l2_p99,l2_max,\
-         linf_mean,linf_std,linf_median,linf_p95,linf_p99,linf_max,log_growth_rate,elapsed_secs"
+         linf_mean,linf_std,linf_median,linf_p95,linf_p99,linf_max,\
+         digit_l2_mean,digit_l2_p99,digit_linf_mean,digit_linf_p99,\
+         log_growth_rate,elapsed_secs"
     )
     .unwrap();
     summary.flush().unwrap();
@@ -182,7 +218,8 @@ pub fn run_sweep(config: &SweepConfig) {
         writeln!(
             summary,
             "{},{},{},{},{},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6},\
-             {:.6},{:.6},{:.6},{:.6},{:.6},{:.6},{:.8},{:.1}",
+             {:.6},{:.6},{:.6},{:.6},{:.6},{:.6},\
+             {:.6},{:.6},{:.6},{:.6},{:.8},{:.1}",
             n,
             q,
             base,
@@ -200,6 +237,10 @@ pub fn run_sweep(config: &SweepConfig) {
             stats.linf_p95,
             stats.linf_p99,
             stats.linf_max,
+            stats.digit_l2_mean,
+            stats.digit_l2_p99,
+            stats.digit_linf_mean,
+            stats.digit_linf_p99,
             stats.log_growth_rate,
             elapsed,
         )
@@ -208,16 +249,18 @@ pub fn run_sweep(config: &SweepConfig) {
 
         let traj_path = traj_dir.join(format!("{}_{}_{}_{}.csv", n, q, base, num_folds));
         let mut traj_file = BufWriter::new(File::create(&traj_path).unwrap());
-        writeln!(traj_file, "fold_step,l2_mean,l2_p99,linf_mean,linf_p99").unwrap();
+        writeln!(traj_file, "fold_step,l2_mean,l2_p99,linf_mean,linf_p99,digit_l2_mean,digit_l2_p99").unwrap();
         for step in 0..num_folds {
             writeln!(
                 traj_file,
-                "{},{:.6},{:.6},{:.6},{:.6}",
+                "{},{:.6},{:.6},{:.6},{:.6},{:.6},{:.6}",
                 step + 1,
                 stats.mean_l2_trajectory[step],
                 stats.p99_l2_trajectory[step],
                 stats.mean_linf_trajectory[step],
                 stats.p99_linf_trajectory[step],
+                stats.mean_digit_l2_trajectory[step],
+                stats.p99_digit_l2_trajectory[step],
             )
             .unwrap();
         }
