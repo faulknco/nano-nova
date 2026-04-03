@@ -84,7 +84,7 @@ results/
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/yourusername/nano-nova
+git clone https://github.com/faulknco/nano-nova
 cd nano-nova
 uv sync
 
