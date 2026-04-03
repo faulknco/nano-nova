@@ -6,3 +6,6 @@ __pycache__/
 *.png
 .ipynb_checkpoints/
 uv.lock
+
+animations/media/
+media/
